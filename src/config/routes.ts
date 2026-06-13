@@ -1,12 +1,14 @@
-// Centralized route paths. Pages will be added in later stages.
 export const routes = {
   home: '/',
   templates: '/templates',
+  templateDetail: (slug: string) => `/templates/${slug}`,
+  categories: '/categories',
+  categoryDetail: (slug: string) => `/categories/${slug}`,
+  preview: (slug: string) => `/preview/${slug}`,
   pricing: '/pricing',
   login: '/login',
-  signup: '/signup',
   dashboard: '/dashboard',
   admin: '/admin',
 } as const;
 
-export type AppRoute = (typeof routes)[keyof typeof routes];
+export type AppRoute = string;

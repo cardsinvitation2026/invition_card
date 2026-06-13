@@ -1,5 +1,4 @@
-import { routes } from './routes';
-
+import { routes as r } from './routes';
 export interface NavItem {
   label: string;
   href: string;
@@ -8,11 +7,14 @@ export interface NavItem {
 }
 
 export const primaryNav: NavItem[] = [
-  { label: 'Templates', href: routes.templates },
-  { label: 'Pricing', href: routes.pricing },
+  { label: 'Templates', href: r.templates },
+  { label: 'Categories', href: r.categories },
+  { label: 'Pricing', href: r.pricing },
 ];
 
-export const accountNav: NavItem[] = [
-  { label: 'Dashboard', href: routes.dashboard, requiresAuth: true },
-  { label: 'Admin', href: routes.admin, requiresAuth: true, adminOnly: true },
+export const footerLegal: NavItem[] = [
+  { label: 'About', href: '/about' },
+  { label: 'Contact', href: '/contact' },
+  { label: 'Privacy', href: '/privacy' },
+  { label: 'Terms', href: '/terms' },
 ];
