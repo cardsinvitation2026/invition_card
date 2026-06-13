@@ -1,8 +1,14 @@
 'use client';
 
 import type { ReactNode } from 'react';
+import { AuthProvider } from './AuthProvider';
+import { Toaster } from '@/components/ui/sonner';
 
-// Stage 1: Empty providers shell. Theme/Query/Auth providers will be added in later stages.
 export function Providers({ children }: { children: ReactNode }) {
-  return <>{children}</>;
+  return (
+    <AuthProvider>
+      {children}
+      <Toaster richColors position="top-right" />
+    </AuthProvider>
+  );
 }
