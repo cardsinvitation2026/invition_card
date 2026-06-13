@@ -1,8 +1,8 @@
-// ========================================
-// My Invitations - Prisma Schema
-// Stage 1: Architecture only. No models defined yet.
-// Datasource declared, but DATABASE_URL is not connected at this stage.
-// ========================================
+// ============================================================================
+// MY INVITATIONS — DATABASE SCHEMA
+// Stage 2: Architecture / Model Design.
+// Do NOT run migrations or connect to the database in this stage.
+// ============================================================================
 
 generator client {
   provider = "prisma-client-js"
@@ -13,4 +13,580 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// Models will be added in subsequent stages.
+// ============================================================================
+// ENUMS
+// ============================================================================
+
+enum UserRole {
+  SUPER_ADMIN
+  USER
+}
+
+enum UserStatus {
+  ACTIVE
+  BLOCKED
+  DELETED
+}
+
+enum TemplateStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum TemplateType {
+  VIDEO
+  PDF_SINGLE
+  PDF_MULTI
+}
+
+enum TemplateVisibility {
+  PUBLIC
+  PRIVATE
+}
+
+enum MembershipStatus {
+  ACTIVE
+  EXPIRED
+  CANCELLED
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCESS
+  FAILED
+  REFUNDED
+}
+
+enum OrderStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  REFUNDED
+}
+
+enum RenderStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+enum InvoiceStatus {
+  GENERATED
+  CANCELLED
+}
+
+enum LanguageCode {
+  EN
+  HI
+}
+
+// ============================================================================
+// USER
+// ----------------------------------------------------------------------------
+// Authentication is delegated to Firebase Auth. We store a mirror record keyed
+// by firebaseUid. Email is also kept unique because we read it from Firebase
+// claims and use it for invoicing.
+// ============================================================================
+
+model User {
+  id          String     @id @default(cuid())
+  firebaseUid String     @unique
+  email       String     @unique
+  name        String?
+  photoUrl    String?
+  role        UserRole   @default(USER)
+  status      UserStatus @default(ACTIVE)
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  drafts       Draft[]
+  memberships  Membership[]
+  orders       Order[]
+  downloadLogs DownloadLog[]
+
+  @@index([role])
+  @@index([status])
+  @@index([createdAt])
+}
+
+// ============================================================================
+// ADMIN SETTINGS
+// ----------------------------------------------------------------------------
+// Singleton-style table. The application layer must ensure only one row exists
+// (use a fixed id when upserting, e.g. "default").
+// ============================================================================
+
+model AdminSettings {
+  id String @id @default("default")
+
+  businessName    String
+  gstNumber       String?
+  email           String
+  phone           String?
+  address         String?
+  state           String?
+  invoicePrefix   String  @default("INV")
+  supportWhatsapp String?
+  supportEmail    String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ============================================================================
+// CATEGORY
+// ----------------------------------------------------------------------------
+// e.g. Wedding, Engagement, Birthday, Anniversary, House Warming.
+// ============================================================================
+
+model Category {
+  id          String  @id @default(cuid())
+  name        String
+  slug        String  @unique
+  description String?
+  thumbnail   String?
+
+  seoTitle       String?
+  seoDescription String?
+  seoKeywords    String?
+
+  sortOrder Int     @default(0)
+  active    Boolean @default(true)
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  templates Template[]
+
+  @@index([active])
+  @@index([sortOrder])
+  @@index([deletedAt])
+}
+
+// ============================================================================
+// TEMPLATE MUSIC
+// ----------------------------------------------------------------------------
+// Library of background music tracks that can be attached to a Template.
+// ============================================================================
+
+model TemplateMusic {
+  id          String  @id @default(cuid())
+  name        String
+  url         String
+  artist      String?
+  durationSec Int?
+  license     String?
+  active      Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  templates Template[]
+
+  @@index([active])
+  @@index([name])
+}
+
+// ============================================================================
+// TEMPLATE
+// ----------------------------------------------------------------------------
+// An invitation template authored by SUPER_ADMIN. Users create Drafts from a
+// Template and fill its dynamic fields.
+// ============================================================================
+
+model Template {
+  id         String  @id @default(cuid())
+  categoryId String
+  musicId    String?
+
+  name        String
+  slug        String             @unique
+  description String?
+  type        TemplateType
+  language    LanguageCode       @default(EN)
+  status      TemplateStatus     @default(DRAFT)
+  visibility  TemplateVisibility @default(PUBLIC)
+
+  thumbnail      String?
+  demoPreviewUrl String?
+
+  featured   Boolean @default(false)
+  trending   Boolean @default(false)
+  bestSeller Boolean @default(false)
+
+  seoTitle       String?
+  seoDescription String?
+  seoKeywords    String?
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  category Category       @relation(fields: [categoryId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  music    TemplateMusic? @relation(fields: [musicId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+
+  fields TemplateField[]
+  drafts Draft[]
+
+  @@index([categoryId])
+  @@index([musicId])
+  @@index([type])
+  @@index([language])
+  @@index([status])
+  @@index([visibility])
+  @@index([featured])
+  @@index([trending])
+  @@index([bestSeller])
+  @@index([createdAt])
+  @@index([deletedAt])
+}
+
+// ============================================================================
+// TEMPLATE FIELD
+// ----------------------------------------------------------------------------
+// Dynamic field definitions per template (e.g. BRIDE_NAME, GROOM_NAME,
+// EVENT_DATE). Admin-configurable. fieldType is a string ("text", "date",
+// "number", "image", ...). Kept as String here because no enum was provided
+// in the Stage 2 spec.
+// ============================================================================
+
+model TemplateField {
+  id         String @id @default(cuid())
+  templateId String
+
+  key         String
+  label       String
+  fieldType   String  @default("text")
+  required    Boolean @default(false)
+  maxLength   Int?
+  placeholder String?
+  helpText    String?
+  sortOrder   Int     @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  template    Template          @relation(fields: [templateId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  draftValues DraftFieldValue[]
+
+  @@unique([templateId, key])
+  @@index([templateId])
+  @@index([sortOrder])
+}
+
+// ============================================================================
+// DRAFT
+// ----------------------------------------------------------------------------
+// A user's working copy of a Template with their data filled in. Spec did
+// not define a Draft status enum, so a String is used (e.g. "ACTIVE",
+// "ARCHIVED").
+// ============================================================================
+
+model Draft {
+  id         String @id @default(cuid())
+  userId     String
+  templateId String
+
+  title  String
+  status String @default("ACTIVE")
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  template Template @relation(fields: [templateId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  fieldValues  DraftFieldValue[]
+  renderJobs   RenderJob[]
+  downloadLogs DownloadLog[]
+
+  @@index([userId])
+  @@index([templateId])
+  @@index([status])
+  @@index([createdAt])
+  @@index([deletedAt])
+}
+
+// ============================================================================
+// DRAFT FIELD VALUE
+// ----------------------------------------------------------------------------
+// The user-supplied value for a single TemplateField inside a Draft.
+// ============================================================================
+
+model DraftFieldValue {
+  id      String @id @default(cuid())
+  draftId String
+  fieldId String
+
+  value String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  draft Draft         @relation(fields: [draftId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  field TemplateField @relation(fields: [fieldId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@unique([draftId, fieldId])
+  @@index([draftId])
+  @@index([fieldId])
+}
+
+// ============================================================================
+// MEMBERSHIP PLAN
+// ----------------------------------------------------------------------------
+// Admin-manageable list of plans: 99, 179, 239. price stored in paise (INR).
+// downloadLimit nullable => unlimited.
+// ============================================================================
+
+model MembershipPlan {
+  id            String  @id @default(cuid())
+  name          String
+  description   String?
+  price         Int // amount in paise
+  currency      String  @default("INR")
+  validityDays  Int
+  downloadLimit Int? // null = unlimited
+  active        Boolean @default(true)
+  sortOrder     Int     @default(0)
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  memberships Membership[]
+
+  @@index([active])
+  @@index([sortOrder])
+  @@index([deletedAt])
+}
+
+// ============================================================================
+// MEMBERSHIP
+// ----------------------------------------------------------------------------
+// A user's purchased plan. Stackable: no unique(userId, status=ACTIVE) is
+// enforced, so users may hold multiple active memberships simultaneously.
+// downloadsUsed increments on every successful download (see DownloadLog).
+// ============================================================================
+
+model Membership {
+  id     String @id @default(cuid())
+  userId String
+  planId String
+
+  status        MembershipStatus @default(ACTIVE)
+  startDate     DateTime         @default(now())
+  endDate       DateTime
+  downloadsUsed Int              @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User           @relation(fields: [userId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  plan MembershipPlan @relation(fields: [planId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  orders       Order[]
+  downloadLogs DownloadLog[]
+
+  @@index([userId])
+  @@index([planId])
+  @@index([status])
+  @@index([endDate])
+  @@index([userId, status])
+}
+
+// ============================================================================
+// ORDER
+// ----------------------------------------------------------------------------
+// A purchase intent. An Order results in (at most) one Membership and one
+// Invoice, and may have multiple Payment attempts.
+// ============================================================================
+
+model Order {
+  id           String  @id @default(cuid())
+  userId       String
+  membershipId String? @unique
+
+  amount   Int // in paise
+  currency String      @default("INR")
+  status   OrderStatus @default(PENDING)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user       User        @relation(fields: [userId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  membership Membership? @relation(fields: [membershipId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+
+  payments Payment[]
+  invoice  Invoice?
+
+  @@index([userId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+// ============================================================================
+// PAYMENT
+// ----------------------------------------------------------------------------
+// One or more payment attempts per Order, captured via Razorpay.
+// ============================================================================
+
+model Payment {
+  id      String @id @default(cuid())
+  orderId String
+
+  razorpayOrderId   String?
+  razorpayPaymentId String? @unique
+  razorpaySignature String?
+
+  status    PaymentStatus @default(PENDING)
+  amount    Int // in paise
+  currency  String        @default("INR")
+  method    String? // card, upi, netbanking, wallet, etc.
+  errorCode String?
+  errorDesc String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@index([orderId])
+  @@index([status])
+  @@index([razorpayOrderId])
+  @@index([createdAt])
+}
+
+// ============================================================================
+// INVOICE
+// ----------------------------------------------------------------------------
+// One invoice per Order. GST and bill-to fields are snapshot at issuance so
+// later changes to AdminSettings or the user profile do not mutate history.
+// ============================================================================
+
+model Invoice {
+  id      String @id @default(cuid())
+  orderId String @unique
+
+  invoiceNumber String @unique
+
+  // Snapshot of business / seller
+  businessName String
+  gstNumber    String?
+  sellerState  String?
+
+  // Snapshot of bill-to
+  billToName    String
+  billToEmail   String?
+  billToAddress String?
+  billToState   String?
+
+  // Tax components in paise
+  subTotal    Int
+  cgst        Int @default(0)
+  sgst        Int @default(0)
+  igst        Int @default(0)
+  totalAmount Int
+
+  status InvoiceStatus @default(GENERATED)
+  pdfUrl String?
+
+  issuedAt  DateTime @default(now())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@index([status])
+  @@index([issuedAt])
+}
+
+// ============================================================================
+// DOWNLOAD LOG
+// ----------------------------------------------------------------------------
+// Append-only audit. Every download counts and always increments. Spec rule:
+// "download counts always increment".
+// ============================================================================
+
+model DownloadLog {
+  id           String @id @default(cuid())
+  userId       String
+  draftId      String
+  membershipId String
+
+  downloadType String? // "video" | "pdf_single" | "pdf_multi" (optional snapshot)
+  fileUrl      String?
+  ipAddress    String?
+  userAgent    String?
+
+  downloadedAt DateTime @default(now())
+  createdAt    DateTime @default(now())
+
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  draft      Draft      @relation(fields: [draftId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  membership Membership @relation(fields: [membershipId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@index([userId])
+  @@index([draftId])
+  @@index([membershipId])
+  @@index([downloadedAt])
+  @@index([userId, downloadedAt])
+}
+
+// ============================================================================
+// RENDER JOB
+// ----------------------------------------------------------------------------
+// Backend-rendering pipeline (Remotion) state for a Draft. A Draft may have
+// many render jobs over its lifetime (preview re-renders, retries, final).
+// ============================================================================
+
+model RenderJob {
+  id      String @id @default(cuid())
+  draftId String
+
+  status     RenderStatus @default(PENDING)
+  previewUrl String?
+  finalUrl   String?
+  error      String?
+  attempt    Int          @default(1)
+
+  startedAt   DateTime?
+  completedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  draft Draft @relation(fields: [draftId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@index([draftId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+// ============================================================================
+// CONTACT SUBMISSION
+// ----------------------------------------------------------------------------
+// Public contact form. No FK to User to allow anonymous submissions.
+// ============================================================================
+
+model ContactSubmission {
+  id      String  @id @default(cuid())
+  name    String
+  email   String
+  phone   String?
+  message String
+
+  ipAddress String?
+  userAgent String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([email])
+  @@index([createdAt])
+}
