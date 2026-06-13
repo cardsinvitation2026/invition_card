@@ -1,0 +1,10 @@
+{
+  "extends": ["next/core-web-vitals", "next/typescript", "prettier"],
+  "rules": {
+    "@typescript-eslint/no-explicit-any": "error",
+    "@typescript-eslint/ban-ts-comment": "error",
+    "@typescript-eslint/no-unused-vars": ["warn", { "argsIgnorePattern": "^_", "varsIgnorePattern": "^_" }],
+    "react/no-unescaped-entities": "off"
+  },
+  "ignorePatterns": ["node_modules", ".next", "out", "build", "prisma/generated"]
+}

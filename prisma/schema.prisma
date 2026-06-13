@@ -1,0 +1,16 @@
+// ========================================
+// My Invitations - Prisma Schema
+// Stage 1: Architecture only. No models defined yet.
+// Datasource declared, but DATABASE_URL is not connected at this stage.
+// ========================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Models will be added in subsequent stages.
