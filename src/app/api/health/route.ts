@@ -1,22 +1,37 @@
-// Health endpoint — moved off the catch-all so /api/auth/* routes win.
 import { NextResponse } from 'next/server';
-import { hasDatabaseUrl, hasFirebaseAdminConfig, hasFirebaseClientConfig, isAuthDevModeServer } from '@/lib/auth/dev-mode';
+import { getPublicHealth } from '@/lib/operations/health.service';
+import { publicHealthResponseSchema } from '@/validations/operations.validation';
 
 export const runtime = 'nodejs';
 
-export function GET() {
-  return NextResponse.json({
-    success: true,
-    data: {
-      name: 'My Invitations API',
-      stage: 3,
-      status: 'auth-architecture-ready',
-      devMode: isAuthDevModeServer(),
-      integrations: {
-        database: hasDatabaseUrl() ? 'configured' : 'placeholder',
-        firebaseClient: hasFirebaseClientConfig() ? 'configured' : 'placeholder',
-        firebaseAdmin: hasFirebaseAdminConfig() ? 'configured' : 'placeholder',
+export async function GET() {
+  try {
+    const health = await getPublicHealth();
+    const parsed = publicHealthResponseSchema.safeParse(health);
+    if (!parsed.success) {
+      return NextResponse.json(
+        { status: 'unhealthy', message: 'Health response validation failed' },
+        { status: 500 },
+      );
+    }
+
+    const statusCode =
+      health.status === 'unhealthy' ? 503 : health.status === 'degraded' ? 200 : 200;
+
+    return NextResponse.json(parsed.data, { status: statusCode });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Health check failed';
+    return NextResponse.json(
+      {
+        status: 'unhealthy',
+        timestamp: new Date().toISOString(),
+        database: { status: 'unhealthy' },
+        cloudinary: { status: 'unhealthy' },
+        razorpay: { status: 'unhealthy' },
+        worker: { status: 'stopped' },
+        message,
       },
-    },
-  });
+      { status: 503 },
+    );
+  }
 }

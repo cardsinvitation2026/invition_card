@@ -1,3 +1,8 @@
-import { z } from 'zod';
-
-export const categorySlugSchema = z.string().min(1).max(120).regex(/^[a-z0-9-]+$/);
+export {
+  CategoryCreateSchema,
+  CategoryUpdateSchema,
+  categorySlugSchema,
+  categoryIdSchema,
+  type CategoryCreateInput,
+  type CategoryUpdateInput,
+} from './category.validation';

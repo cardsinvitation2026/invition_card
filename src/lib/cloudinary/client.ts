@@ -14,7 +14,11 @@ export class CloudinaryService {
     return this.config !== null;
   }
 
-  // Future: uploadImage, uploadVideo, deleteAsset, signedUploadParams, ...
+  getConfig(): CloudinaryConfig | null {
+    return this.config;
+  }
+
+  // Future: deleteAsset, signedUploadParams, ...
 }
 
 function loadConfig(): CloudinaryConfig | null {

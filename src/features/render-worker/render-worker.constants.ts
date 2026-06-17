@@ -1,0 +1,3 @@
+export const RENDER_WORKER_POLL_INTERVAL_MS = 5000;
+
+export const RENDER_WORKER_CONCURRENCY = 1;

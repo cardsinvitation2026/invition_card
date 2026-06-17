@@ -2,6 +2,7 @@
 const nextConfig = {
   output: 'standalone',
   reactStrictMode: true,
+  transpilePackages: ['remotion', '@remotion/player'],
   allowedDevOrigins: ['*.preview.emergentagent.com', '*.preview.emergentcf.cloud', '*.cluster-5.preview.emergentcf.cloud'],
   images: {
     unoptimized: true,

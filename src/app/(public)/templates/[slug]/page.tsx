@@ -79,7 +79,7 @@ export default async function TemplateDetailPage({ params }: { params: Params })
           <Card>
             <CardContent className="space-y-4 p-5">
               <Button asChild size="lg" className="w-full">
-                <Link href={`/login?next=/templates/${t.slug}`}>
+                <Link href={`/templates/${t.slug}/edit`}>
                   <Wand2 className="mr-2 size-4" /> Personalise this template
                 </Link>
               </Button>

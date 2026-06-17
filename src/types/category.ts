@@ -17,3 +17,17 @@ export interface Category {
 export interface CategoryWithCount extends Category {
   templateCount: number;
 }
+
+export interface CategoryCreateData {
+  name: string;
+  slug: string;
+  description?: string | null;
+  thumbnail?: string | null;
+  seoTitle?: string | null;
+  seoDescription?: string | null;
+  seoKeywords?: string | null;
+  sortOrder: number;
+  active: boolean;
+}
+
+export type CategoryUpdateData = Partial<CategoryCreateData>;

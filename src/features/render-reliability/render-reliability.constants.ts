@@ -1,0 +1,10 @@
+export const RENDER_RELIABILITY_MAX_RETRIES = 3;
+
+export const RENDER_RELIABILITY_STUCK_PROCESSING_THRESHOLD_MS = 30 * 60 * 1000;
+
+export const RENDER_RELIABILITY_STUCK_RECOVERY_ERROR =
+  'Render worker recovery detected abandoned processing job.';
+
+export const RENDER_RELIABILITY_RETRY_COUNT_PREFIX = 'RETRY_COUNT:';
+
+export const RENDER_RELIABILITY_RETRY_COUNT_PATTERN = /^RETRY_COUNT:(\d+)\|/;

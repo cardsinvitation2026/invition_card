@@ -1,17 +1,9 @@
-// Razorpay integration placeholder.
+// Razorpay integration.
 import 'server-only';
 
 export interface RazorpayConfig {
   keyId: string;
   keySecret: string;
-}
-
-export class RazorpayService {
-  constructor(private readonly config: RazorpayConfig | null) {}
-  isReady(): boolean {
-    return this.config !== null;
-  }
-  // Future: createOrder, verifyWebhook, refund, ...
 }
 
 function loadConfig(): RazorpayConfig | null {
@@ -21,4 +13,14 @@ function loadConfig(): RazorpayConfig | null {
   return { keyId, keySecret };
 }
 
-export const razorpayService = new RazorpayService(loadConfig());
+export class RazorpayService {
+  isReady(): boolean {
+    return loadConfig() !== null;
+  }
+
+  getConfig(): RazorpayConfig | null {
+    return loadConfig();
+  }
+}
+
+export const razorpayService = new RazorpayService();

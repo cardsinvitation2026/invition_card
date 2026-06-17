@@ -13,6 +13,7 @@ const SAMPLE_VIDEO = 'https://storage.googleapis.com/gtv-videos-bucket/sample/Fo
 function common(idx: number) {
   const created = new Date(Date.parse('2026-01-01') + idx * 86400000 * 5).toISOString();
   return {
+    musicId: null,
     status: 'PUBLISHED' as const,
     visibility: 'PUBLIC' as const,
     createdAt: created,

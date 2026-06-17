@@ -1,9 +1,32 @@
 import 'server-only';
-import type { Category, CategoryWithCount } from '@/types/category';
+import { randomUUID } from 'node:crypto';
 import type { CategoryRepository } from './category.repository';
+import type { Category, CategoryCreateData, CategoryUpdateData, CategoryWithCount } from '@/types/category';
 import { templateSeed } from '@/features/templates/seed';
 
-const now = new Date().toISOString();
+declare global {
+  // eslint-disable-next-line no-var
+  var __mi_inmem_categories__: Map<string, Category> | undefined;
+}
+
+function store(): Map<string, Category> {
+  if (!globalThis.__mi_inmem_categories__) {
+    const map = new Map<string, Category>();
+    for (const c of seedCategories) {
+      map.set(c.id, { ...c });
+    }
+    globalThis.__mi_inmem_categories__ = map;
+  }
+  return globalThis.__mi_inmem_categories__;
+}
+
+function countTemplatesForCategory(categoryId: string): number {
+  return templateSeed.filter((t) => t.categoryId === categoryId).length;
+}
+
+function sorted(values: Category[]): Category[] {
+  return values.slice().sort((a, b) => a.sortOrder - b.sortOrder || a.name.localeCompare(b.name));
+}
 
 export const seedCategories: Category[] = [
   {
@@ -18,8 +41,8 @@ export const seedCategories: Category[] = [
     seoKeywords: 'wedding invitation, video invitation, save the date',
     sortOrder: 1,
     active: true,
-    createdAt: now,
-    updatedAt: now,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
   },
   {
     id: 'cat_engagement',
@@ -33,8 +56,8 @@ export const seedCategories: Category[] = [
     seoKeywords: 'engagement invitation, ring ceremony, roka invitation',
     sortOrder: 2,
     active: true,
-    createdAt: now,
-    updatedAt: now,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
   },
   {
     id: 'cat_birthday',
@@ -48,8 +71,8 @@ export const seedCategories: Category[] = [
     seoKeywords: 'birthday invitation, first birthday, kids party',
     sortOrder: 3,
     active: true,
-    createdAt: now,
-    updatedAt: now,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
   },
   {
     id: 'cat_anniversary',
@@ -63,8 +86,8 @@ export const seedCategories: Category[] = [
     seoKeywords: 'anniversary invitation, silver jubilee, golden jubilee',
     sortOrder: 4,
     active: true,
-    createdAt: now,
-    updatedAt: now,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
   },
   {
     id: 'cat_house_warming',
@@ -78,27 +101,83 @@ export const seedCategories: Category[] = [
     seoKeywords: 'house warming invitation, griha pravesh',
     sortOrder: 5,
     active: true,
-    createdAt: now,
-    updatedAt: now,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
   },
 ];
 
-function countForCategory(categoryId: string): number {
-  return templateSeed.filter((t) => t.categoryId === categoryId).length;
+export function getInMemoryCategoryById(id: string): Category | null {
+  return store().get(id) ?? null;
 }
 
 export const inMemoryCategoryRepository: CategoryRepository = {
+  async create(input: CategoryCreateData) {
+    const now = new Date().toISOString();
+    const created: Category = {
+      id: randomUUID(),
+      name: input.name,
+      slug: input.slug,
+      description: input.description ?? null,
+      thumbnail: input.thumbnail ?? null,
+      seoTitle: input.seoTitle ?? null,
+      seoDescription: input.seoDescription ?? null,
+      seoKeywords: input.seoKeywords ?? null,
+      sortOrder: input.sortOrder,
+      active: input.active,
+      createdAt: now,
+      updatedAt: now,
+    };
+    store().set(created.id, created);
+    return created;
+  },
+  async update(id, input: CategoryUpdateData) {
+    const existing = store().get(id);
+    if (!existing) throw new Error('Category not found');
+    const updated: Category = {
+      ...existing,
+      ...(input.name !== undefined ? { name: input.name } : {}),
+      ...(input.slug !== undefined ? { slug: input.slug } : {}),
+      ...(input.description !== undefined ? { description: input.description } : {}),
+      ...(input.thumbnail !== undefined ? { thumbnail: input.thumbnail } : {}),
+      ...(input.seoTitle !== undefined ? { seoTitle: input.seoTitle } : {}),
+      ...(input.seoDescription !== undefined ? { seoDescription: input.seoDescription } : {}),
+      ...(input.seoKeywords !== undefined ? { seoKeywords: input.seoKeywords } : {}),
+      ...(input.sortOrder !== undefined ? { sortOrder: input.sortOrder } : {}),
+      ...(input.active !== undefined ? { active: input.active } : {}),
+      updatedAt: new Date().toISOString(),
+    };
+    store().set(id, updated);
+    return updated;
+  },
+  async delete(id) {
+    const existing = store().get(id);
+    if (!existing) throw new Error('Category not found');
+    store().delete(id);
+  },
   async list(opts) {
-    const list = opts?.activeOnly ? seedCategories.filter((c) => c.active) : seedCategories.slice();
-    return list
-      .slice()
-      .sort((a, b) => a.sortOrder - b.sortOrder)
-      .map((c): CategoryWithCount => ({ ...c, templateCount: countForCategory(c.id) }));
+    const list = opts?.activeOnly
+      ? [...store().values()].filter((c) => c.active)
+      : [...store().values()];
+    return sorted(list).map(
+      (c): CategoryWithCount => ({
+        ...c,
+        templateCount: countTemplatesForCategory(c.id),
+      }),
+    );
+  },
+  async listActive() {
+    return sorted([...store().values()].filter((c) => c.active));
   },
   async findBySlug(slug) {
-    return seedCategories.find((c) => c.slug === slug) ?? null;
+    return [...store().values()].find((c) => c.slug === slug) ?? null;
   },
   async findById(id) {
-    return seedCategories.find((c) => c.id === id) ?? null;
+    return store().get(id) ?? null;
+  },
+  async count(opts) {
+    const list = opts?.activeOnly
+      ? [...store().values()].filter((c) => c.active)
+      : [...store().values()];
+    return list.length;
   },
 };

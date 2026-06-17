@@ -5,6 +5,10 @@ export const envSchema = z.object({
   // Database
   DATABASE_URL: z.string().url().optional(),
 
+  // Auth / session
+  NEXTAUTH_SECRET: z.string().optional(),
+  AUTH_SESSION_SECRET: z.string().optional(),
+
   // Firebase Auth (client-side public)
   NEXT_PUBLIC_FIREBASE_API_KEY: z.string().optional(),
   NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: z.string().optional(),
@@ -21,6 +25,7 @@ export const envSchema = z.object({
   // Razorpay
   RAZORPAY_KEY_ID: z.string().optional(),
   RAZORPAY_KEY_SECRET: z.string().optional(),
+  RAZORPAY_WEBHOOK_SECRET: z.string().optional(),
 
   // Resend
   RESEND_API_KEY: z.string().optional(),

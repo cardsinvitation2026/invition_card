@@ -1,7 +1,12 @@
-import type { Category, CategoryWithCount } from '@/types/category';
+import type { Category, CategoryCreateData, CategoryUpdateData, CategoryWithCount } from '@/types/category';
 
 export interface CategoryRepository {
-  list(opts?: { activeOnly?: boolean }): Promise<CategoryWithCount[]>;
-  findBySlug(slug: string): Promise<Category | null>;
+  create(input: CategoryCreateData): Promise<Category>;
+  update(id: string, input: CategoryUpdateData): Promise<Category>;
+  delete(id: string): Promise<void>;
   findById(id: string): Promise<Category | null>;
+  findBySlug(slug: string): Promise<Category | null>;
+  list(opts?: { activeOnly?: boolean }): Promise<CategoryWithCount[]>;
+  listActive(): Promise<Category[]>;
+  count(opts?: { activeOnly?: boolean }): Promise<number>;
 }

@@ -1,6 +1,6 @@
 import 'server-only';
-import type { Category, CategoryWithCount } from '@/types/category';
 import type { CategoryRepository } from './category.repository';
+import type { Category, CategoryCreateData, CategoryWithCount } from '@/types/category';
 import { getPrisma } from '@/lib/prisma/client';
 
 function db() {
@@ -39,24 +39,92 @@ function toCategory(row: {
   };
 }
 
+function notDeleted() {
+  return { deletedAt: null };
+}
+
 export const prismaCategoryRepository: CategoryRepository = {
-  async list(opts) {
-    const rows = await db().category.findMany({
-      where: opts?.activeOnly ? { active: true, deletedAt: null } : undefined,
-      orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
-      include: { _count: { select: { templates: true } } },
+  async create(input: CategoryCreateData) {
+    const row = await db().category.create({
+      data: {
+        name: input.name,
+        slug: input.slug,
+        description: input.description ?? null,
+        thumbnail: input.thumbnail ?? null,
+        seoTitle: input.seoTitle ?? null,
+        seoDescription: input.seoDescription ?? null,
+        seoKeywords: input.seoKeywords ?? null,
+        sortOrder: input.sortOrder,
+        active: input.active,
+      },
     });
-    return rows.map((r) => ({
-      ...toCategory(r),
-      templateCount: r._count.templates,
-    })) as CategoryWithCount[];
+    return toCategory(row);
+  },
+  async update(id, input) {
+    const row = await db().category.update({
+      where: { id },
+      data: {
+        ...(input.name !== undefined ? { name: input.name } : {}),
+        ...(input.slug !== undefined ? { slug: input.slug } : {}),
+        ...(input.description !== undefined ? { description: input.description } : {}),
+        ...(input.thumbnail !== undefined ? { thumbnail: input.thumbnail } : {}),
+        ...(input.seoTitle !== undefined ? { seoTitle: input.seoTitle } : {}),
+        ...(input.seoDescription !== undefined ? { seoDescription: input.seoDescription } : {}),
+        ...(input.seoKeywords !== undefined ? { seoKeywords: input.seoKeywords } : {}),
+        ...(input.sortOrder !== undefined ? { sortOrder: input.sortOrder } : {}),
+        ...(input.active !== undefined ? { active: input.active } : {}),
+      },
+    });
+    return toCategory(row);
+  },
+  async delete(id) {
+    await db().category.update({
+      where: { id },
+      data: { deletedAt: new Date(), active: false },
+    });
+  },
+  async list(opts) {
+    const where = {
+      ...notDeleted(),
+      ...(opts?.activeOnly ? { active: true } : {}),
+    };
+    const rows = await db().category.findMany({
+      where,
+      orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
+      include: { _count: { select: { templates: { where: notDeleted() } } } },
+    });
+    return rows.map(
+      (r): CategoryWithCount => ({
+        ...toCategory(r),
+        templateCount: r._count.templates,
+      }),
+    );
+  },
+  async listActive() {
+    const rows = await db().category.findMany({
+      where: { active: true, ...notDeleted() },
+      orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
+    });
+    return rows.map(toCategory);
   },
   async findBySlug(slug) {
-    const row = await db().category.findUnique({ where: { slug } });
+    const row = await db().category.findFirst({
+      where: { slug, ...notDeleted() },
+    });
     return row ? toCategory(row) : null;
   },
   async findById(id) {
-    const row = await db().category.findUnique({ where: { id } });
+    const row = await db().category.findFirst({
+      where: { id, ...notDeleted() },
+    });
     return row ? toCategory(row) : null;
+  },
+  async count(opts) {
+    return db().category.count({
+      where: {
+        ...notDeleted(),
+        ...(opts?.activeOnly ? { active: true } : {}),
+      },
+    });
   },
 };

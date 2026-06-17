@@ -4,7 +4,19 @@ export type TemplateStatus = 'DRAFT' | 'PUBLISHED' | 'ARCHIVED';
 export type TemplateVisibility = 'PUBLIC' | 'PRIVATE';
 export type LanguageCode = 'EN' | 'HI';
 
-export type TemplateSort = 'newest' | 'featured' | 'trending' | 'popular';
+export type TemplateSort =
+  | 'newest'
+  | 'oldest'
+  | 'featured'
+  | 'trending'
+  | 'popular';
+
+export type TemplateAdminSort =
+  | 'newest'
+  | 'oldest'
+  | 'featured'
+  | 'trending'
+  | 'popular';
 
 export interface TemplateCategoryRef {
   id: string;
@@ -29,6 +41,7 @@ export interface TemplateListItem {
 
 export interface TemplateDetail extends TemplateListItem {
   description: string;
+  musicId: string | null;
   tags: string[];
   features: string[];
   seoTitle: string | null;
@@ -61,4 +74,47 @@ export interface TemplateListResult {
   page: number;
   pageSize: number;
   pageCount: number;
+}
+
+export interface TemplateCreateData {
+  name: string;
+  slug: string;
+  description?: string | null;
+  categoryId: string;
+  musicId?: string | null;
+  thumbnail?: string | null;
+  demoPreviewUrl?: string | null;
+  type: TemplateType;
+  language: LanguageCode;
+  status: TemplateStatus;
+  visibility: TemplateVisibility;
+  featured: boolean;
+  trending: boolean;
+  bestSeller: boolean;
+  seoTitle?: string | null;
+  seoDescription?: string | null;
+  seoKeywords?: string | null;
+}
+
+export type TemplateUpdateData = Partial<TemplateCreateData>;
+
+export interface TemplateAdminListQuery {
+  search?: string;
+  categorySlug?: string;
+  language?: LanguageCode;
+  featured?: boolean;
+  status?: TemplateStatus;
+  visibility?: TemplateVisibility;
+  page: number;
+  pageSize: number;
+  sort: TemplateAdminSort;
+}
+
+export interface TemplateCountFilters {
+  search?: string;
+  categorySlug?: string;
+  language?: LanguageCode;
+  featured?: boolean;
+  status?: TemplateStatus;
+  visibility?: TemplateVisibility;
 }
