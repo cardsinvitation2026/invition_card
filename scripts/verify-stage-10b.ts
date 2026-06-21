@@ -4,6 +4,7 @@
  */
 import { draftService } from '../src/features/drafts';
 import { renderJobService } from '../src/features/render-jobs';
+import { executeRenderJob } from '../src/features/render-jobs/render-job-execution.service';
 import { resolveCompositionForTemplateSlug } from '../src/remotion/resolver/composition-resolver';
 import { getRegisteredSlugs } from '../src/remotion/registry/composition-registry';
 import { buildRenderExecutionContext } from '../src/remotion/render/render-context.builder';
@@ -49,7 +50,7 @@ async function main() {
 
   // Test 3–5: Execute render (requires ffmpeg for COMPLETED + MP4)
   try {
-    const executed = await renderJobService.executeRenderJob(session(), job.id);
+    const executed = await executeRenderJob(session(), job.id);
     if (executed.status === 'COMPLETED') {
       const outputPath = buildRenderOutputPath(job.id);
       results['test_3_execute_render'] = 'PASS';
@@ -75,7 +76,7 @@ async function main() {
     draftId: badDraft.draft.id,
     templateId: 'tpl_mehendi_mosaic',
   });
-  const badExecuted = await renderJobService.executeRenderJob(session(), badJob.id);
+  const badExecuted = await executeRenderJob(session(), badJob.id);
   results['test_6_invalid_template_failed'] =
     badExecuted.status === 'FAILED' ? 'PASS' : `FAIL (${badExecuted.status})`;
 

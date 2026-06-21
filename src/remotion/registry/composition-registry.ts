@@ -2,9 +2,13 @@ export type CompositionFamilyId = 'WeddingRoyalFamily';
 
 const COMPOSITION_REGISTRY: Record<string, CompositionFamilyId> = {
   'royal-mandap-gold': 'WeddingRoyalFamily',
-  'royal-maroon': 'WeddingRoyalFamily',
-  'royal-red': 'WeddingRoyalFamily',
-  'royal-black': 'WeddingRoyalFamily',
+  'mehendi-mosaic': 'WeddingRoyalFamily',
+  'vintage-roses': 'WeddingRoyalFamily',
+  'confetti-pop': 'WeddingRoyalFamily',
+  'sweet-sixteen': 'WeddingRoyalFamily',
+  'silver-jubilee': 'WeddingRoyalFamily',
+  'golden-years': 'WeddingRoyalFamily',
+  'diya-glow': 'WeddingRoyalFamily',
 };
 
 export function resolveCompositionFamily(slug: string): CompositionFamilyId | null {

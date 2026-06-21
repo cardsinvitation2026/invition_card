@@ -12,6 +12,7 @@ import {
   RuntimeTemplateLoadingState,
 } from '@/components/runtime-form/RuntimeFormStates';
 import { DraftSaveStatus } from '@/components/drafts/DraftSaveStatus';
+import { GenerateVideoButton } from '@/components/render-jobs/GenerateVideoButton';
 import { PersonalizedRemotionPreview } from '@/components/preview/PersonalizedRemotionPreview';
 import { useDraftAutosave } from '@/features/drafts/autosave/useDraftAutosave';
 import { buildDefaultFormValues } from '@/features/runtime-form/field-validator';
@@ -154,7 +155,15 @@ export function TemplateEditPageClient({
               Your progress is saved automatically. The preview updates as you type.
             </p>
           </div>
-          <DraftSaveStatus status={autosaveStatus} restoring={restoring} />
+          <div className="flex flex-col items-stretch gap-3 sm:items-end">
+            <DraftSaveStatus status={autosaveStatus} restoring={restoring} />
+            <GenerateVideoButton
+              draftId={draftId}
+              templateId={definition.template.id}
+              templateSlug={definition.template.slug}
+              templateType={definition.template.type}
+            />
+          </div>
         </div>
       </div>
 

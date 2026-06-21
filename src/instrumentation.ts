@@ -1,8 +1,5 @@
 export async function register() {
-  if (process.env.NEXT_RUNTIME === 'edge') {
-    return;
-  }
-
-  const { bootstrapRenderWorker } = await import('@/server/render-worker.bootstrap');
-  bootstrapRenderWorker();
+  // Background render worker runs in a separate Node process.
+  // Dev/prod local: npm run worker:dev  (second terminal)
+  // Set DISABLE_RENDER_WORKER=1 to skip if you start the worker manually.
 }

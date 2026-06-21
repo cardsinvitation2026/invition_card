@@ -1,7 +1,17 @@
+const { loadEnvConfig } = require('@next/env');
+
+loadEnvConfig(process.cwd());
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   output: 'standalone',
   reactStrictMode: true,
+  serverExternalPackages: [
+    '@remotion/bundler',
+    '@remotion/renderer',
+    '@rspack/core',
+    '@rspack/binding',
+  ],
   transpilePackages: ['remotion', '@remotion/player'],
   allowedDevOrigins: ['*.preview.emergentagent.com', '*.preview.emergentcf.cloud', '*.cluster-5.preview.emergentcf.cloud'],
   images: {

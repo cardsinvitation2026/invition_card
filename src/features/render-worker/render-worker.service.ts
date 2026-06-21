@@ -165,6 +165,7 @@ export function createRenderWorkerService(executor: RenderJobExecutor) {
   };
 }
 
-export const renderWorkerService = createRenderWorkerService(
-  (session, jobId) => renderJobService.executeRenderJob(session, jobId),
-);
+export const renderWorkerService = createRenderWorkerService(async (session, jobId) => {
+  const { executeRenderJob } = await import('@/features/render-jobs/render-job-execution.service');
+  return executeRenderJob(session, jobId);
+});

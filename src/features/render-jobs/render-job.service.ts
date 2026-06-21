@@ -14,8 +14,6 @@ import type {
   RenderJobListResult,
   RenderJobStatusUpdate,
 } from '@/types/render-job';
-import { renderVideoService } from '@/remotion/render/render-video.service';
-import { cloudinaryVideoService } from '@/lib/cloudinary/cloudinary-video.service';
 
 function repo(): RenderJobRepository {
   return hasDatabaseUrl() ? prismaRenderJobRepository : inMemoryRenderJobRepository;
@@ -83,50 +81,5 @@ export const renderJobService = {
 
   async claimPendingRenderJob(jobId: string): Promise<boolean> {
     return repo().claimPending(jobId);
-  },
-
-  async executeRenderJob(session: AuthSession, jobId: string): Promise<RenderJobDetail> {
-    const job = await this.getRenderJob(session, jobId);
-    if (!job) {
-      throw new Error('Render job not found');
-    }
-
-    if (job.status === 'PENDING') {
-      await this.updateRenderJobStatus(jobId, {
-        status: 'PROCESSING',
-        startedAt: new Date().toISOString(),
-        error: null,
-      });
-    } else if (job.status !== 'PROCESSING') {
-      throw new Error('Render job is not in PENDING status');
-    }
-
-    try {
-      const result = await renderVideoService.execute({
-        jobId: job.id,
-        userId: session.userId,
-        draftId: job.draftId,
-        templateId: job.templateId,
-      });
-
-      const upload = await cloudinaryVideoService.uploadRenderVideo({
-        jobId: job.id,
-        localFilePath: result.outputPath,
-      });
-
-      return await this.updateRenderJobStatus(jobId, {
-        status: 'COMPLETED',
-        finalUrl: upload.url,
-        completedAt: new Date().toISOString(),
-        error: null,
-      });
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Render failed';
-      return await this.updateRenderJobStatus(jobId, {
-        status: 'FAILED',
-        error: message,
-        completedAt: new Date().toISOString(),
-      });
-    }
   },
 };

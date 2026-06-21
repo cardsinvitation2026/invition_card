@@ -2,7 +2,7 @@
  * Manual Stage 10B render execution script.
  * Usage: npx tsx scripts/execute-render-job.ts <userId> <jobId>
  */
-import { renderJobService } from '../src/features/render-jobs';
+import { executeRenderJob } from '../src/features/render-jobs/render-job-execution.service';
 
 async function main() {
   const userId = process.argv[2];
@@ -22,7 +22,7 @@ async function main() {
     provider: 'dev' as const,
   };
 
-  const result = await renderJobService.executeRenderJob(session, jobId);
+  const result = await executeRenderJob(session, jobId);
   console.log(JSON.stringify(result, null, 2));
 }
 

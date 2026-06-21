@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { Fragment, type ReactNode } from 'react';
 import {
   Table,
   TableBody,
@@ -56,7 +56,7 @@ export function AdminTable<T extends { id: string }>({
       <div className="grid gap-3 md:hidden">
         {rows.map((row) =>
           mobileCard ? (
-            mobileCard(row)
+            <Fragment key={row.id}>{mobileCard(row)}</Fragment>
           ) : (
             <Card key={row.id}>
               <CardContent className="space-y-2 p-4">
